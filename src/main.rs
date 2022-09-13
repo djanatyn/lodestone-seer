@@ -1,15 +1,15 @@
-use lodestone::model::{
-    self, datacenter::Datacenter, gc::GrandCompany, language::Language, profile::Profile,
-};
+use lodestone::model::{datacenter::Datacenter, gc::GrandCompany, language::Language};
 use lodestone::search::SearchBuilder;
 use rusqlite::{named_params, Connection};
 
 fn main() {
     let db: Connection = Connection::open("lodestone.db").expect("failed to open");
 
+    println!("initializing database");
     db.execute_batch(include_str!("init.sql"))
         .expect("failed to run init script");
 
+    println!("searching for character");
     let profiles = SearchBuilder::new()
         .character("Yov Ziv")
         .datacenter(Datacenter::Primal)
@@ -20,6 +20,7 @@ fn main() {
 
     let myself = profiles.first().expect("failed to get first profile");
 
+    println!("fetched information for {}", myself.name);
     db.execute(
         "INSERT OR IGNORE INTO profile_snapshots (
             user_id, free_company, name, nameday, guardian, city_state, server,
@@ -46,6 +47,7 @@ fn main() {
     .expect("failed to insert");
 
     let snapshot_id = db.last_insert_rowid();
+    println!("created snapshot ID: {}", snapshot_id);
 
     for (class, info) in &myself.classes.0 {
         if let Some(xp) = info {
@@ -64,6 +66,8 @@ fn main() {
                 },
             )
             .expect("failed to insert experience");
+
+            println!("stored experience: {:?}", class);
         }
     }
 }
